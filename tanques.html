@@ -43,6 +43,7 @@
     let enemies = [];
     let wave = 1;
     let gameOver = false;
+    let record = localStorage.getItem('tankGameRecord') || 0;
 
     function drawTank(tank,obj){
       tank.style.left = obj.x+"px";
@@ -53,7 +54,7 @@
 
     function updateHUD(){
       if(!gameOver){
-        hud.textContent = `Jugador: ${j1.vida} | Oleada: ${wave}`;
+        hud.textContent = `Jugador: ${j1.vida} | Oleada: ${wave} | Récord: ${record}`;
       }
     }
 
@@ -155,6 +156,10 @@
           tank1.remove();
           hud.textContent="Perdiste (colisión)";
           gameOver = true;
+          if(wave > record) {
+            record = wave;
+            localStorage.setItem('tankGameRecord', record);
+          }
         }
       });
 
@@ -203,6 +208,10 @@
             tank1.remove(); 
             hud.textContent="Perdiste";
             gameOver = true;
+            if(wave > record) {
+              record = wave;
+              localStorage.setItem('tankGameRecord', record);
+            }
           }
           updateHUD();
         }

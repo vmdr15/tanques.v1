@@ -38,9 +38,17 @@
             background-color: rgba(0, 255, 0, 0.1);
         }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const recordValue = document.getElementById('recordValue');
+            const record = localStorage.getItem('tankGameRecord') || 0;
+            recordValue.textContent = record;
+        });
+    </script>
 </head>
 <body>
     <h1>Bienvenido a mi juego de tanques</h1>
     <a class="button-link" href="tanques.html">Jugar</a>
+    <p class="info" id="record">Récord de oleadas: <span id="recordValue">0</span></p>
 </body>
 </html>

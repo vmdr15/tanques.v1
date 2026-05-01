@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tanques Oleadas</title>
+  <style>
+    body { margin:0; overflow:hidden; background:#333; }
+    #gameArea { position:relative; width:100vw; height:100vh; background:#555; }
+    .tank {
+      position:absolute; width:40px; height:40px;
+      background:green; transform-origin:center center;
+    }
+    .tank2 { background:red; }
+    .cannon {
+      position:absolute; width:6px; height:25px;
+      background:black; left:17px; top:-25px;
+    }
+    .vidaLabel {
+      position:absolute; color:white; font-size:14px;
+      text-align:center; width:40px;
+      top:-20px; left:0;
+    }
+    .bullet {
+      position:absolute; width:8px; height:8px; background:yellow;
+    }
+    #hud {
+      position:absolute; top:10px; left:10px; color:white; font-size:18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameArea">
+    <div id="tank1" class="tank"><div class="cannon"></div></div>
+    <div id="hud"></div>
+  </div>
+
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const tank1 = document.getElementById("tank1");
+    const hud = document.getElementById("hud");
+
+    let j1 = {x:100, y:300, angle:0, vida:100};
+    let enemies = [];
+    let wave = 1;
+    let gameOver = false;
+
+    function drawTank(tank,obj){
+      tank.style.left = obj.x+"px";
+      tank.style.top = obj.y+"px";
+      tank.style.transform = `rotate(${obj.angle}deg)`;
+      if(obj.label) obj.label.textContent = obj.vida;
+    }
+
+    function updateHUD(){
+      if(!gameOver){
+        hud.textContent = `Jugador: ${j1.vida} | Oleada: ${wave}`;
+      }
+    }
+
+    drawTank(tank1,j1);
+    updateHUD();
+
+    // Controles jugador 1
+    document.addEventListener("keydown",(e)=>{
+      if(gameOver) return;
+
+      if(e.key==="ArrowUp"){  
+        j1.x += 5*Math.sin(j1.angle*Math.PI/180);
+        j1.y -= 5*Math.cos(j1.angle*Math.PI/180);
+      }
+      if(e.key==="ArrowDown"){  
+        j1.x -= 5*Math.sin(j1.angle*Math.PI/180);
+        j1.y += 5*Math.cos(j1.angle*Math.PI/180);
+      }
+      if(e.key==="ArrowLeft"){ j1.angle -= 5; }
+      if(e.key==="ArrowRight"){ j1.angle += 5; }
+
+      // Disparo normal con espacio
+      if(e.key===" "){ shoot(j1,"ia"); }
+
+      // Disparos en direcciones fijas con WASD
+      let oldAngle = j1.angle;
+      if(e.key==="w"){ // disparo hacia adelante
+        shoot(j1,"ia");
+      }
+      if(e.key==="s"){ // disparo hacia atrás
+        j1.angle += 180;
+        shoot(j1,"ia");
+        j1.angle = oldAngle;
+      }
+      if(e.key==="a"){ // disparo hacia la izquierda
+        j1.angle -= 90;
+        shoot(j1,"ia");
+        j1.angle = oldAngle;
+      }
+      if(e.key==="d"){ // disparo hacia la derecha
+        j1.angle += 90;
+        shoot(j1,"ia");
+        j1.angle = oldAngle;
+      }
+
+      drawTank(tank1,j1);
+    });
+
+    // Crear oleada con posiciones aleatorias
+    function spawnWave(count){
+      enemies = [];
+      j1.vida = 100; // regenerar vida del jugador
+      updateHUD();
+      for(let i=0;i<count;i++){
+        let ia = {
+          x: Math.random()*(window.innerWidth-60), 
+          y: Math.random()*(window.innerHeight-60), 
+          angle:180, 
+          vida:100
+        };
+        const tank = document.createElement("div");
+        tank.className="tank tank2";
+        const cannon=document.createElement("div");
+        cannon.className="cannon";
+        const vidaLabel=document.createElement("div");
+        vidaLabel.className="vidaLabel";
+        vidaLabel.textContent="100";
+        tank.appendChild(cannon);
+        tank.appendChild(vidaLabel);
+        gameArea.appendChild(tank);
+        ia.dom = tank;
+        ia.label = vidaLabel;
+        enemies.push(ia);
+        drawTank(tank,ia);
+      }
+    }
+
+    spawnWave(1);
+
+    // Actualizar enemigos
+    function updateEnemies(){
+      if(gameOver) return;
+      enemies.forEach((ia)=>{
+        if(ia.vida<=0) return;
+        let dx = j1.x - ia.x;
+        let dy = j1.y - ia.y;
+        let targetAngle = Math.atan2(dx, -dy) * 180/Math.PI;
+        if(targetAngle > ia.angle) ia.angle += 3;
+        else if(targetAngle < ia.angle) ia.angle -= 3;
+        ia.x += 2*Math.sin(ia.angle*Math.PI/180);
+        ia.y -= 2*Math.cos(ia.angle*Math.PI/180);
+        if(Math.abs(targetAngle-ia.angle)<10 && Math.random()<0.05){
+          shoot(ia,"j1");
+        }
+        drawTank(ia.dom,ia);
+
+        // Colisión tanque IA con jugador
+        if(checkCollision(ia.dom, tank1)){
+          tank1.remove();
+          hud.textContent="Perdiste (colisión)";
+          gameOver = true;
+        }
+      });
+
+      // Si todos murieron, nueva oleada
+      if(enemies.every(e=>e.vida<=0) && !gameOver){
+        wave++;
+        spawnWave(wave);
+      }
+    }
+
+    setInterval(updateEnemies,100);
+
+    // Disparos
+    function shoot(obj,target){
+      const bullet=document.createElement("div");
+      bullet.className="bullet";
+      bullet.style.left=(obj.x+15)+"px";
+      bullet.style.top=(obj.y+15)+"px";
+      gameArea.appendChild(bullet);
+
+      let bx=obj.x+15, by=obj.y+15;
+      const dx=7*Math.sin(obj.angle*Math.PI/180);
+      const dy=-7*Math.cos(obj.angle*Math.PI/180);
+
+      const interval=setInterval(()=>{
+        bx+=dx; by+=dy;
+        bullet.style.left=bx+"px";
+        bullet.style.top=by+"px";
+
+        // Colisión con enemigos
+        if(target==="ia"){
+          enemies.forEach((ia)=>{
+            if(ia.vida>0 && checkCollision(bullet, ia.dom)){
+              ia.vida -= 1;
+              bullet.remove(); clearInterval(interval);
+              if(ia.vida<=0){ ia.dom.remove(); }
+              drawTank(ia.dom,ia);
+            }
+          });
+        }
+        // Colisión con jugador
+        if(target==="j1" && checkCollision(bullet, tank1)){
+          j1.vida -= 1;
+          bullet.remove(); clearInterval(interval);
+          if(j1.vida<=0){
+            tank1.remove(); 
+            hud.textContent="Perdiste";
+            gameOver = true;
+          }
+          updateHUD();
+        }
+
+        if(bx<0||bx>window.innerWidth||by<0||by>window.innerHeight){
+          bullet.remove(); clearInterval(interval);
+        }
+      },30);
+    }
+
+    function checkCollision(a,b){
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+      return !(aRect.right < bRect.left || 
+               aRect.left > bRect.right || 
+               aRect.bottom < bRect.top || 
+               aRect.top > bRect.bottom);
+    }
+  </script>
+</body>
+</html>

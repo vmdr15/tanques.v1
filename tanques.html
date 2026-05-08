@@ -17,12 +17,14 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.12), transparent 18%),
-        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.08), transparent 16%),
-        linear-gradient(135deg, rgba(255,255,255,0.04), rgba(0,0,0,0.04));
-      opacity: 0.85;
+        linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px),
+        linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px),
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.10), transparent 16%),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.06), transparent 14%);
+      background-size: 12px 12px, 12px 12px, 100% 100%, 100% 100%;
+      opacity: 0.9;
       pointer-events: none;
-      filter: blur(1px);
+      image-rendering: pixelated;
       z-index: 0;
     }
     .terrain-object {
@@ -34,19 +36,19 @@
       pointer-events:none;
     }
     .tank {
-      position:absolute; width:40px; height:40px;
+      position:absolute; width:32px; height:32px;
       background:green; transform-origin:center center;
       z-index:2;
     }
     .tank2 { background:red; }
     .cannon {
-      position:absolute; width:6px; height:25px;
-      background:black; left:17px; top:-25px;
+      position:absolute; width:5px; height:20px;
+      background:black; left:13px; top:-20px;
     }
     .vidaLabel {
       position:absolute; color:white; font-size:14px;
-      text-align:center; width:40px;
-      top:-20px; left:0;
+      text-align:center; width:32px;
+      top:-18px; left:0;
     }
     .bullet {
       position:absolute; width:8px; height:8px; background:yellow;
@@ -137,12 +139,14 @@
         decor.src = src;
         decor.className = 'terrain-object';
 
-        const size = 40 + Math.floor(Math.random() * 40);
-        decor.style.width = `${size}px`;
-        decor.style.height = `${size}px`;
-        decor.style.left = `${Math.random() * (window.innerWidth - size)}px`;
-        decor.style.top = `${Math.random() * (window.innerHeight - size)}px`;
-        decor.dataset.type = src.includes('trinchera.gif') ? 'trinchera' : 'arbusto';
+        const tankSize = 32;
+      const isTrench = src.includes('trinchera.gif');
+      const size = isTrench ? tankSize : 40 + Math.floor(Math.random() * 40);
+      decor.style.width = `${size}px`;
+      decor.style.height = `${size}px`;
+      decor.style.left = `${Math.random() * (window.innerWidth - size)}px`;
+      decor.style.top = `${Math.random() * (window.innerHeight - size)}px`;
+      decor.dataset.type = isTrench ? 'trinchera' : 'arbusto';
 
         gameArea.appendChild(decor);
       }
@@ -268,11 +272,11 @@
     function shoot(obj,target){
       const bullet=document.createElement("div");
       bullet.className="bullet";
-      bullet.style.left=(obj.x+15)+"px";
-      bullet.style.top=(obj.y+15)+"px";
+      bullet.style.left=(obj.x+13)+"px";
+      bullet.style.top=(obj.y+13)+"px";
       gameArea.appendChild(bullet);
 
-      let bx=obj.x+15, by=obj.y+15;
+      let bx=obj.x+13, by=obj.y+13;
       const dx=7*Math.sin(obj.angle*Math.PI/180);
       const dy=-7*Math.cos(obj.angle*Math.PI/180);
 

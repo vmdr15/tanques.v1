@@ -5,10 +5,38 @@
   <title>Tanques Oleadas</title>
   <style>
     body { margin:0; overflow:hidden; background:#333; }
-    #gameArea { position:relative; width:100vw; height:100vh; background:#555; }
+    #gameArea {
+      position:relative;
+      width:100vw;
+      height:100vh;
+      background: linear-gradient(180deg, #6b6b6b 0%, #4a4a4a 100%);
+      overflow:hidden;
+    }
+    #gameArea::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.12), transparent 18%),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.08), transparent 16%),
+        linear-gradient(135deg, rgba(255,255,255,0.04), rgba(0,0,0,0.04));
+      opacity: 0.85;
+      pointer-events: none;
+      filter: blur(1px);
+      z-index: 0;
+    }
+    .terrain-object {
+      position:absolute;
+      width:60px;
+      height:60px;
+      object-fit:contain;
+      z-index:0;
+      pointer-events:none;
+    }
     .tank {
       position:absolute; width:40px; height:40px;
       background:green; transform-origin:center center;
+      z-index:2;
     }
     .tank2 { background:red; }
     .cannon {
@@ -25,6 +53,7 @@
     }
     #hud {
       position:absolute; top:10px; left:10px; color:white; font-size:18px;
+      z-index:3;
     }
     .menu-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -96,8 +125,32 @@
       }
     }
 
+    function placeRandomDecorations(count = 12) {
+      const decorImages = [
+        'recursos/arbusto.gif',
+        'recursos/trinchera.gif'
+      ];
+
+      for (let i = 0; i < count; i++) {
+        const decor = document.createElement('img');
+        const src = decorImages[Math.floor(Math.random() * decorImages.length)];
+        decor.src = src;
+        decor.className = 'terrain-object';
+
+        const size = 40 + Math.floor(Math.random() * 40);
+        decor.style.width = `${size}px`;
+        decor.style.height = `${size}px`;
+        decor.style.left = `${Math.random() * (window.innerWidth - size)}px`;
+        decor.style.top = `${Math.random() * (window.innerHeight - size)}px`;
+        decor.dataset.type = src.includes('trinchera.gif') ? 'trinchera' : 'arbusto';
+
+        gameArea.appendChild(decor);
+      }
+    }
+
     drawTank(tank1,j1);
     updateHUD();
+    placeRandomDecorations();
 
     // Controles jugador 1
     document.addEventListener("keydown",(e)=>{
@@ -227,6 +280,16 @@
         bx+=dx; by+=dy;
         bullet.style.left=bx+"px";
         bullet.style.top=by+"px";
+
+        // Colisión con objetos de terreno
+        const terrains = gameArea.querySelectorAll('.terrain-object');
+        for (const terrain of terrains) {
+          if (checkCollision(bullet, terrain)) {
+            bullet.remove();
+            clearInterval(interval);
+            return;
+          }
+        }
 
         // Colisión con enemigos
         if(target==="ia"){

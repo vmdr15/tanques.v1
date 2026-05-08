@@ -91,6 +91,7 @@
     const gameArea = document.getElementById("gameArea");
     const tank1 = document.getElementById("tank1");
     const hud = document.getElementById("hud");
+    const TANK_SIZE = 32;
 
     let j1 = {x:100, y:300, angle:0, vida:100};
     let enemies = [];
@@ -127,6 +128,36 @@
       }
     }
 
+    function rectsOverlap(a,b){
+      return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+    }
+
+    function isTankBlockedByTrench(obj){
+      const tankRect = { left: obj.x, top: obj.y, right: obj.x + TANK_SIZE, bottom: obj.y + TANK_SIZE };
+      return Array.from(gameArea.querySelectorAll('.terrain-object[data-type="trinchera"]')).some((terrain)=>{
+        const rect = terrain.getBoundingClientRect();
+        const parentRect = gameArea.getBoundingClientRect();
+        const terrainRect = {
+          left: rect.left - parentRect.left,
+          top: rect.top - parentRect.top,
+          right: rect.right - parentRect.left,
+          bottom: rect.bottom - parentRect.top
+        };
+        return rectsOverlap(tankRect, terrainRect);
+      });
+    }
+
+    function moveTank(obj, dx, dy){
+      const prevX = obj.x;
+      const prevY = obj.y;
+      obj.x += dx;
+      obj.y += dy;
+      if(isTankBlockedByTrench(obj)){
+        obj.x = prevX;
+        obj.y = prevY;
+      }
+    }
+
     function placeRandomDecorations(count = 12) {
       const decorImages = [
         'recursos/arbusto.gif',
@@ -139,14 +170,13 @@
         decor.src = src;
         decor.className = 'terrain-object';
 
-        const tankSize = 32;
-      const isTrench = src.includes('trinchera.gif');
-      const size = isTrench ? tankSize : 40 + Math.floor(Math.random() * 40);
-      decor.style.width = `${size}px`;
-      decor.style.height = `${size}px`;
-      decor.style.left = `${Math.random() * (window.innerWidth - size)}px`;
-      decor.style.top = `${Math.random() * (window.innerHeight - size)}px`;
-      decor.dataset.type = isTrench ? 'trinchera' : 'arbusto';
+        const isTrench = src.includes('trinchera.gif');
+        const size = isTrench ? 48 : 40 + Math.floor(Math.random() * 40);
+        decor.style.width = `${size}px`;
+        decor.style.height = `${size}px`;
+        decor.style.left = `${Math.random() * (window.innerWidth - size)}px`;
+        decor.style.top = `${Math.random() * (window.innerHeight - size)}px`;
+        decor.dataset.type = isTrench ? 'trinchera' : 'arbusto';
 
         gameArea.appendChild(decor);
       }
@@ -161,12 +191,10 @@
       if(gameOver) return;
 
       if(e.key==="ArrowUp"){  
-        j1.x += 5*Math.sin(j1.angle*Math.PI/180);
-        j1.y -= 5*Math.cos(j1.angle*Math.PI/180);
+        moveTank(j1, 5*Math.sin(j1.angle*Math.PI/180), -5*Math.cos(j1.angle*Math.PI/180));
       }
       if(e.key==="ArrowDown"){  
-        j1.x -= 5*Math.sin(j1.angle*Math.PI/180);
-        j1.y += 5*Math.cos(j1.angle*Math.PI/180);
+        moveTank(j1, -5*Math.sin(j1.angle*Math.PI/180), 5*Math.cos(j1.angle*Math.PI/180));
       }
       if(e.key==="ArrowLeft"){ j1.angle -= 5; }
       if(e.key==="ArrowRight"){ j1.angle += 5; }
@@ -241,6 +269,10 @@
         else if(targetAngle < ia.angle) ia.angle -= 3;
         ia.x += 2*Math.sin(ia.angle*Math.PI/180);
         ia.y -= 2*Math.cos(ia.angle*Math.PI/180);
+        if(isTankBlockedByTrench(ia)){
+          ia.x -= 2*Math.sin(ia.angle*Math.PI/180);
+          ia.y += 2*Math.cos(ia.angle*Math.PI/180);
+        }
         if(Math.abs(targetAngle-ia.angle)<10 && Math.random()<0.05){
           shoot(ia,"j1");
         }
